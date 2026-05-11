@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LIFE RPG Tracker</title>
     <style>
         :root {
             --bg-color: #d8e4de;
@@ -18,213 +19,241 @@
         body {
             background-color: var(--bg-color);
             color: var(--text-main);
-            font-family: -apple-system, "Noto Sans SC", "Microsoft YaHei", sans-serif;
+            font-family: -apple-system, "Noto Sans SC", sans-serif;
             margin: 0;
-            padding: 40px 20px;
-            line-height: 1.6;
+            padding: 0;
+            display: flex;
+            justify-content: center;
         }
 
         .container {
-            max-width: 900px;
-            margin: 0 auto;
+            width: 100%;
+            max-width: 500px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
         }
 
-        header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
+        /* 页面切换逻辑 */
+        .page { display: none; padding: 20px; flex-direction: column; }
+        .page.active { display: flex; }
 
-        header h1 {
-            font-weight: 300;
-            letter-spacing: 2px;
-            color: var(--secondary);
-            margin-bottom: 10px;
-        }
+        /* --- 主页面样式 --- */
+        header { text-align: center; margin: 20px 0; }
+        header h1 { font-weight: 300; color: var(--secondary); margin: 0; letter-spacing: 2px; }
 
-        /* 状态顶栏 */
         .status-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
         }
 
         .status-card {
             background: var(--card-bg);
-            padding: 25px;
+            padding: 20px;
             border-radius: 16px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.03);
             text-align: center;
             border: 1px solid var(--border-color);
         }
 
-        .label {
-            display: block;
-            font-size: 0.85rem;
-            color: var(--text-sub);
-            margin-bottom: 8px;
-            font-weight: 500;
-        }
+        .label { display: block; font-size: 0.8rem; color: var(--text-sub); margin-bottom: 5px; }
+        .value { font-size: 1.5rem; font-weight: 600; color: var(--secondary); }
 
-        .value {
-            font-size: 1.8rem;
-            font-weight: 600;
-            color: var(--secondary);
-        }
-
-        .unit { font-size: 0.9rem; margin-left: 4px; color: var(--text-sub); }
-
-        /* 等级进度条 */
-        .level-progress {
-            margin-top: 10px;
-            background: #eee;
-            height: 6px;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        .fill {
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
-            height: 100%;
-            width: 70%; /* 模拟进度 */
-        }
-
-        /* 任务列表 */
-        .section-title {
-            font-size: 1.2rem;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            font-weight: 600;
-        }
-
-        .section-title::before {
-            content: "";
-            width: 4px;
-            height: 18px;
-            background: var(--primary);
-            margin-right: 10px;
-            border-radius: 2px;
-        }
-
-        .quest-container {
-            display: grid;
-            gap: 15px;
-        }
+        .section-title { font-size: 1.1rem; margin-bottom: 15px; display: flex; align-items: center; font-weight: 600; }
+        .section-title::before { content: ""; width: 4px; height: 16px; background: var(--primary); margin-right: 8px; border-radius: 2px; }
 
         .quest-item {
             background: var(--card-bg);
-            padding: 18px 25px;
+            padding: 15px 20px;
             border-radius: 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border: 1px solid var(--border-color);
-            transition: transform 0.2s ease;
-        }
-
-        .quest-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.05);
-        }
-
-        .quest-info h3 {
-            margin: 0;
-            font-size: 1.05rem;
-            font-weight: 500;
-        }
-
-        .quest-info span {
-            font-size: 0.85rem;
-            color: var(--text-sub);
+            margin-bottom: 12px;
+            transition: 0.2s;
         }
 
         .quest-reward {
             background: #f0fff4;
             color: var(--primary);
-            padding: 6px 14px;
+            padding: 5px 12px;
             border-radius: 20px;
             font-weight: 600;
             font-size: 0.9rem;
-            border: 1px solid #d7f3e3;
         }
 
-        /* 移动端适配 */
-        @media (max-width: 600px) {
-            .status-grid { grid-template-columns: 1fr; }
+        .btn-add-habit {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 35px;
+            border-radius: 30px;
+            font-weight: bold;
+            box-shadow: 0 8px 20px rgba(87, 204, 153, 0.3);
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        /* --- 添加页样式 --- */
+        .add-header { margin-bottom: 30px; }
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; font-size: 0.9rem; color: var(--text-sub); margin-bottom: 8px; }
+        
+        input {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .btn-finish {
+            background: var(--secondary);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .btn-cancel {
+            background: none;
+            border: none;
+            color: var(--text-sub);
+            margin-top: 15px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <header>
-        <h1>LIFE RPG</h1>
-        <p style="color: var(--text-sub); font-size: 0.9rem;">记录每一天的隐性资产增长</p>
-    </header>
+    <!-- 主页面 -->
+    <div id="homePage" class="page active">
+        <header>
+            <h1>LIFE RPG</h1>
+            <p style="color: var(--text-sub); font-size: 0.8rem;">记录每一天的增长</p>
+        </header>
 
-    <!-- 顶部数据概览 -->
-    <div class="status-grid">
-        <div class="status-card">
-            <span class="label">当前等级</span>
-            <div class="value">Lv.12</div>
-            <div class="level-progress"><div class="fill"></div></div>
+        <div class="status-grid">
+            <div class="status-card">
+                <span class="label">当前等级</span>
+                <div class="value" id="lvDisplay">Lv.1</div>
+            </div>
+            <div class="status-card">
+                <span class="label">可用日元</span>
+                <div class="value" id="balanceDisplay">¥ 0</div>
+            </div>
         </div>
-        <div class="status-card">
-            <span class="label">可用资产</span>
-            <div class="value">4,500<span class="unit">JPY</span></div>
+
+        <div class="section-title">我的习惯清单</div>
+        <div id="habitList">
+            <!-- 习惯项将在这里动态生成 -->
         </div>
-        <div class="status-card">
-            <span class="label">累计经验值</span>
-            <div class="value">14,400<span class="unit">EXP</span></div>
-        </div>
+
+        <button class="btn-add-habit" onclick="navigate('addPage')">+ 添加新习惯</button>
     </div>
 
-    <!-- 任务区域 -->
-    <div class="section-title">本周挑战 (Weekly Quests)</div>
-    
-    <div class="quest-container">
-        <div class="quest-item">
-            <div class="quest-info">
-                <h3>🌙 规律作息</h3>
-                <span>目标：12点前睡 (5次以上)</span>
-            </div>
-            <div class="quest-reward">¥ 2000</div>
+    <!-- 添加页面 -->
+    <div id="addPage" class="page">
+        <div class="add-header">
+            <h2 style="color: var(--secondary)">新增习惯任务</h2>
+            <p style="color: var(--text-sub)">设定目标，赚取你的现实奖励</p>
         </div>
 
-        <div class="quest-item">
-            <div class="quest-info">
-                <h3>🇯🇵 语言习得</h3>
-                <span>目标：学习日语 (4次以上)</span>
-            </div>
-            <div class="quest-reward">¥ 1000</div>
+        <div class="input-group">
+            <label>习惯名称</label>
+            <input type="text" id="habitName" placeholder="例如：12点前睡觉">
         </div>
 
-        <div class="quest-item">
-            <div class="quest-info">
-                <h3>🎨 灵感创作</h3>
-                <span>目标：内容输出 (3次以上)</span>
-            </div>
-            <div class="quest-reward">¥ 1500</div>
+        <div class="input-group">
+            <label>完成目标</label>
+            <input type="text" id="habitTarget" placeholder="例如：每周5次以上">
         </div>
 
-        <div class="quest-item">
-            <div class="quest-info">
-                <h3>🏃 身体重塑</h3>
-                <span>目标：有效运动 (4次以上)</span>
-            </div>
-            <div class="quest-reward">¥ 2000</div>
+        <div class="input-group">
+            <label>悬赏金额 (日元)</label>
+            <input type="number" id="habitReward" placeholder="例如：2000">
         </div>
 
-        <div class="quest-item" style="border-style: dashed;">
-            <div class="quest-info" style="opacity: 0.6;">
-                <h3>🥤 自律意志</h3>
-                <span>目标：不买饮料 (5次以上)</span>
-            </div>
-            <div class="quest-reward" style="background: #d8e4de; color: #999; border-color: #eee;">¥ 500</div>
-        </div>
+        <button class="btn-finish" onclick="saveAndReturn()">完成！</button>
+        <button class="btn-cancel" onclick="navigate('homePage')">取消并返回</button>
     </div>
 </div>
+
+<script>
+    // 页面跳转逻辑
+    function navigate(pageId) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+        window.scrollTo(0,0);
+    }
+
+    // 从本地存储读取数据
+    let habits = JSON.parse(localStorage.getItem('lifeRpgData')) || [];
+
+    // 渲染主页列表
+    function render() {
+        const list = document.getElementById('habitList');
+        list.innerHTML = '';
+        
+        habits.forEach(h => {
+            const item = document.createElement('div');
+            item.className = 'quest-item';
+            item.innerHTML = `
+                <div class="quest-info">
+                    <strong style="display:block">${h.name}</strong>
+                    <span style="font-size:0.8rem; color:var(--text-sub)">${h.target}</span>
+                </div>
+                <div class="quest-reward">¥ ${h.reward}</div>
+            `;
+            list.appendChild(item);
+        });
+
+        // 自动计算总分和等级 (简单演示逻辑)
+        const total = habits.reduce((sum, h) => sum + parseInt(h.reward), 0);
+        document.getElementById('balanceDisplay').innerText = `¥ ${total}`;
+        document.getElementById('lvDisplay').innerText = `Lv.${Math.floor(Math.sqrt(total/100)) || 1}`;
+    }
+
+    // 保存并跳转
+    function saveAndReturn() {
+        const name = document.getElementById('habitName').value;
+        const target = document.getElementById('habitTarget').value;
+        const reward = document.getElementById('habitReward').value;
+
+        if (name && target && reward) {
+            habits.push({ name, target, reward });
+            localStorage.setItem('lifeRpgData', JSON.stringify(habits));
+            
+            // 清空输入框
+            document.getElementById('habitName').value = '';
+            document.getElementById('habitTarget').value = '';
+            document.getElementById('habitReward').value = '';
+
+            render(); // 更新主页数据
+            navigate('homePage'); // 跳回主页
+        } else {
+            alert("请填写完整信息哦！");
+        }
+    }
+
+    // 初始加载渲染
+    render();
+</script>
 
 </body>
 </html>
