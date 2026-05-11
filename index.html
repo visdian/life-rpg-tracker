@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --bg-color: #d8e4de;
+            --card-bg: #ffffff;
+            --primary: #57cc99; /* 清新薄荷绿 */
+            --secondary: #38a3a5;
+            --accent: #ffb703; /* 活力金黄 */
+            --text-main: #2d3436;
+            --text-sub: #636e72;
+            --border-color: #f1f2f6;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: -apple-system, "Noto Sans SC", "Microsoft YaHei", sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-weight: 300;
+            letter-spacing: 2px;
+            color: var(--secondary);
+            margin-bottom: 10px;
+        }
+
+        /* 状态顶栏 */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .status-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .value {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--secondary);
+        }
+
+        .unit { font-size: 0.9rem; margin-left: 4px; color: var(--text-sub); }
+
+        /* 等级进度条 */
+        .level-progress {
+            margin-top: 10px;
+            background: #eee;
+            height: 6px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .fill {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            height: 100%;
+            width: 70%; /* 模拟进度 */
+        }
+
+        /* 任务列表 */
+        .section-title {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+        }
+
+        .section-title::before {
+            content: "";
+            width: 4px;
+            height: 18px;
+            background: var(--primary);
+            margin-right: 10px;
+            border-radius: 2px;
+        }
+
+        .quest-container {
+            display: grid;
+            gap: 15px;
+        }
+
+        .quest-item {
+            background: var(--card-bg);
+            padding: 18px 25px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s ease;
+        }
+
+        .quest-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.05);
+        }
+
+        .quest-info h3 {
+            margin: 0;
+            font-size: 1.05rem;
+            font-weight: 500;
+        }
+
+        .quest-info span {
+            font-size: 0.85rem;
+            color: var(--text-sub);
+        }
+
+        .quest-reward {
+            background: #f0fff4;
+            color: var(--primary);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border: 1px solid #d7f3e3;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 600px) {
+            .status-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>LIFE RPG</h1>
+        <p style="color: var(--text-sub); font-size: 0.9rem;">记录每一天的隐性资产增长</p>
+    </header>
+
+    <!-- 顶部数据概览 -->
+    <div class="status-grid">
+        <div class="status-card">
+            <span class="label">当前等级</span>
+            <div class="value">Lv.12</div>
+            <div class="level-progress"><div class="fill"></div></div>
+        </div>
+        <div class="status-card">
+            <span class="label">可用资产</span>
+            <div class="value">4,500<span class="unit">JPY</span></div>
+        </div>
+        <div class="status-card">
+            <span class="label">累计经验值</span>
+            <div class="value">14,400<span class="unit">EXP</span></div>
+        </div>
+    </div>
+
+    <!-- 任务区域 -->
+    <div class="section-title">本周挑战 (Weekly Quests)</div>
+    
+    <div class="quest-container">
+        <div class="quest-item">
+            <div class="quest-info">
+                <h3>🌙 规律作息</h3>
+                <span>目标：12点前睡 (5次以上)</span>
+            </div>
+            <div class="quest-reward">¥ 2000</div>
+        </div>
+
+        <div class="quest-item">
+            <div class="quest-info">
+                <h3>🇯🇵 语言习得</h3>
+                <span>目标：学习日语 (4次以上)</span>
+            </div>
+            <div class="quest-reward">¥ 1000</div>
+        </div>
+
+        <div class="quest-item">
+            <div class="quest-info">
+                <h3>🎨 灵感创作</h3>
+                <span>目标：内容输出 (3次以上)</span>
+            </div>
+            <div class="quest-reward">¥ 1500</div>
+        </div>
+
+        <div class="quest-item">
+            <div class="quest-info">
+                <h3>🏃 身体重塑</h3>
+                <span>目标：有效运动 (4次以上)</span>
+            </div>
+            <div class="quest-reward">¥ 2000</div>
+        </div>
+
+        <div class="quest-item" style="border-style: dashed;">
+            <div class="quest-info" style="opacity: 0.6;">
+                <h3>🥤 自律意志</h3>
+                <span>目标：不买饮料 (5次以上)</span>
+            </div>
+            <div class="quest-reward" style="background: #d8e4de; color: #999; border-color: #eee;">¥ 500</div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
