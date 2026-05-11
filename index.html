@@ -3,257 +3,339 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIFE RPG Tracker</title>
+    <title>LIFE RPG - Ocean of Self</title>
     <style>
         :root {
-            --bg-color: #d8e4de;
-            --card-bg: #ffffff;
-            --primary: #57cc99; /* 清新薄荷绿 */
+            --bg-color: #b7e1f5;
+            --card-bg: rgba(255, 255, 255, 0.88);
+            --primary: #20b2aa;
             --secondary: #38a3a5;
-            --accent: #ffb703; /* 活力金黄 */
-            --text-main: #2d3436;
+            --accent: #ffa500;
+            --xp-color: #6c5ce7;
+            --text-main: #323232;
             --text-sub: #636e72;
-            --border-color: #f1f2f6;
+        }
+
+        /* 核心动画 */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(1deg); }
+        }
+        @keyframes waveMove {
+            0% { transform: translateX(0) translateY(0); }
+            50% { transform: translateX(-40px) translateY(10px); }
+            100% { transform: translateX(0) translateY(0); }
+        }
+        @keyframes levelUpPop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.4); filter: brightness(1.2); }
+            100% { transform: scale(1); }
+        }
+        @keyframes repairWave {
+            0% { box-shadow: 0 0 0 0 rgba(255, 165, 0, 0.6); }
+            100% { box-shadow: 0 0 0 40px rgba(255, 165, 0, 0); }
+        }
+        @keyframes confetti {
+            0% { transform: translateY(0) rotate(0); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
         }
 
         body {
             background-color: var(--bg-color);
             color: var(--text-main);
             font-family: -apple-system, "Noto Sans SC", sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
+            margin: 0; padding: 0; overflow-x: hidden;
+            transition: background 1s ease;
         }
 
-        .container {
-            width: 100%;
-            max-width: 500px;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+        /* 背景波浪线 */
+        .wave-container { position: fixed; top: 0; left: 0; width: 200%; height: 100%; z-index: -1; pointer-events: none; }
+        .wave-line { position: absolute; width: 100%; height: 200px; border-top: 3px solid rgba(255, 255, 255, 0.4); border-radius: 40%; animation: waveMove 12s ease-in-out infinite; }
+        .wave1 { top: 20%; animation-duration: 15s; opacity: 0.6; }
+        .wave2 { top: 45%; animation-duration: 18s; opacity: 0.4; animation-delay: -2s; }
+        .wave3 { top: 75%; animation-duration: 12s; opacity: 0.5; animation-delay: -5s; }
+
+        /* 顶部里程进度条 */
+        .xp-container { position: fixed; top: 0; left: 0; width: 100%; height: 6px; background: rgba(255,255,255,0.25); z-index: 1000; }
+        .xp-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--xp-color), #a29bfe); box-shadow: 0 0 8px rgba(108, 92, 231, 0.4); transition: width 0.8s ease; }
+
+        .container { width: 100%; max-width: 500px; margin: 0 auto; padding: 30px 20px; box-sizing: border-box; }
+
+        /* 状态面板 */
+        .ship-status {
+            background: var(--card-bg); padding: 30px 25px; border-radius: 35px;
+            text-align: center; margin-bottom: 25px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.06);
+            backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.7);
             position: relative;
         }
 
-        /* 页面切换逻辑 */
-        .page { display: none; padding: 20px; flex-direction: column; }
-        .page.active { display: flex; }
+        .level-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--xp-color); color: white; padding: 5px 18px; border-radius: 20px; font-size: 0.8rem; font-weight: 800; box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3); }
+        .ship-icon { font-size: 4rem; margin-bottom: 10px; display: block; animation: float 5s ease-in-out infinite; transition: 0.3s; }
+        .ship-level-up { animation: levelUpPop 0.8s cubic-bezier(0.17, 0.67, 0.83, 0.67) !important; }
 
-        /* --- 主页面样式 --- */
-        header { text-align: center; margin: 20px 0; }
-        header h1 { font-weight: 300; color: var(--secondary); margin: 0; letter-spacing: 2px; }
+        .hp-section { margin: 20px 0; text-align: left; }
+        .hp-label { font-size: 0.65rem; font-weight: bold; color: var(--text-sub); letter-spacing: 1px; margin-bottom: 6px; display: block; }
+        .hp-bar-bg { width: 100%; height: 10px; background: rgba(0,0,0,0.05); border-radius: 20px; overflow: hidden; border: 1.5px solid #fff; }
+        .hp-bar-fill { height: 100%; background: linear-gradient(90deg, #ff7675, #fab1a0); transition: 1.2s cubic-bezier(0.22, 1, 0.36, 1); }
+        .hp-healthy { background: linear-gradient(90deg, var(--primary), var(--secondary)); }
 
-        .status-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 30px;
+        .resource-row { display: flex; justify-content: space-between; margin-bottom: 20px; gap: 12px; }
+        .resource-item { flex: 1; background: #fff; padding: 10px; border-radius: 16px; font-size: 0.9rem; font-weight: bold; border: 1px solid #f0f0f0; }
+
+        .repair-group { display: flex; gap: 12px; }
+        .btn-repair { flex: 1; padding: 12px 5px; border-radius: 15px; font-size: 0.72rem; font-weight: 800; cursor: pointer; transition: 0.3s; border: none; }
+        .btn-with-wood { background: var(--primary); color: white; }
+        .btn-with-money { background: white; color: var(--accent); border: 1.5px solid var(--accent); }
+        .repair-flash { animation: repairWave 0.6s ease-out; }
+
+        /* 习惯列表 */
+        .quest-item { background: var(--card-bg); padding: 22px; border-radius: 28px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.6); animation: float 6s ease-in-out infinite; }
+        .btn-check { background: var(--primary); color: white; border: none; padding: 14px 28px; border-radius: 18px; font-weight: bold; cursor: pointer; }
+
+        /* Story 日志面板 */
+        .log-panel {
+            background: rgba(255,255,255,0.2); padding: 18px; border-radius: 22px; 
+            margin-bottom: 100px; border-left: 4px solid var(--primary);
+            backdrop-filter: blur(5px);
         }
+        .log-header { font-size: 0.7rem; color: var(--primary); font-weight: 800; letter-spacing: 1.5px; margin-bottom: 5px; }
+        .log-content { font-size: 0.9rem; line-height: 1.5; color: var(--text-main); }
 
-        .status-card {
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 16px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-            text-align: center;
-            border: 1px solid var(--border-color);
-        }
-
-        .label { display: block; font-size: 0.8rem; color: var(--text-sub); margin-bottom: 5px; }
-        .value { font-size: 1.5rem; font-weight: 600; color: var(--secondary); }
-
-        .section-title { font-size: 1.1rem; margin-bottom: 15px; display: flex; align-items: center; font-weight: 600; }
-        .section-title::before { content: ""; width: 4px; height: 16px; background: var(--primary); margin-right: 8px; border-radius: 2px; }
-
-        .quest-item {
-            background: var(--card-bg);
-            padding: 15px 20px;
-            border-radius: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: 1px solid var(--border-color);
-            margin-bottom: 12px;
-            transition: 0.2s;
-        }
-
-        .quest-reward {
-            background: #f0fff4;
-            color: var(--primary);
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
-        .btn-add-habit {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px 35px;
-            border-radius: 30px;
-            font-weight: bold;
-            box-shadow: 0 8px 20px rgba(87, 204, 153, 0.3);
-            cursor: pointer;
-            z-index: 10;
-        }
-
-        /* --- 添加页样式 --- */
-        .add-header { margin-bottom: 30px; }
+        /* 添加页 */
+        .page { display: none; }
+        .page.active { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .input-card { background: var(--card-bg); padding: 25px; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
         .input-group { margin-bottom: 20px; }
-        .input-group label { display: block; font-size: 0.9rem; color: var(--text-sub); margin-bottom: 8px; }
-        
-        input {
-            width: 100%;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 12px;
-            box-sizing: border-box;
-            font-size: 1rem;
-            outline: none;
-        }
-
-        .btn-finish {
-            background: var(--secondary);
-            color: white;
-            border: none;
-            padding: 16px;
-            border-radius: 12px;
-            font-weight: bold;
-            font-size: 1.1rem;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-
-        .btn-cancel {
-            background: none;
-            border: none;
-            color: var(--text-sub);
-            margin-top: 15px;
-            cursor: pointer;
-        }
+        .input-group label { display: block; font-size: 0.85rem; color: var(--text-sub); margin-bottom: 8px; font-weight: bold; }
+        input { width: 100%; padding: 16px; border: 1.5px solid #e1e8ed; border-radius: 16px; box-sizing: border-box; font-size: 1rem; }
+        .btn-add-habit-main { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; border: none; padding: 16px 50px; border-radius: 40px; font-weight: bold; box-shadow: 0 10px 25px rgba(32, 178, 170, 0.3); cursor: pointer; z-index: 100; }
+        .confetti-piece { position: fixed; width: 8px; height: 8px; top: -10px; z-index: 2000; animation: confetti 2.5s linear forwards; border-radius: 2px; }
     </style>
 </head>
 <body>
 
+<div class="wave-container">
+    <div class="wave-line wave1"></div>
+    <div class="wave-line wave2"></div>
+    <div class="wave-line wave3"></div>
+</div>
+
+<div class="xp-container"><div id="xpFill" class="xp-fill"></div></div>
+
 <div class="container">
-    <!-- 主页面 -->
     <div id="homePage" class="page active">
-        <header>
-            <h1>LIFE RPG</h1>
-            <p style="color: var(--text-sub); font-size: 0.8rem;">记录每一天的增长</p>
-        </header>
-
-        <div class="status-grid">
-            <div class="status-card">
-                <span class="label">当前等级</span>
-                <div class="value" id="lvDisplay">Lv.1</div>
+        <div class="ship-status" id="shipCard">
+            <div class="level-badge" id="levelLabel">见习船员</div>
+            <span class="ship-icon" id="shipVisual">🛶</span>
+            <div id="rankDisplay" style="font-size: 0.8rem; color: var(--text-sub); font-weight: bold;">里程: Lv.0</div>
+            
+            <div class="hp-section">
+                <span class="hp-label">HULL INTEGRITY / 船体健康度</span>
+                <div class="hp-bar-bg"><div id="hpFill" class="hp-bar-fill hp-healthy"></div></div>
+                <div style="font-size: 0.7rem; color: var(--text-sub); margin-top: 6px; text-align: right;">
+                    下一海域进度: <span id="xpText">0%</span>
+                </div>
             </div>
-            <div class="status-card">
-                <span class="label">可用日元</span>
-                <div class="value" id="balanceDisplay">¥ 0</div>
+
+            <div class="resource-row">
+                <div class="resource-item">💰 ¥ <span id="balanceDisplay">0</span></div>
+                <div class="resource-item">🪵 木板 x <span id="woodDisplay">0</span></div>
+            </div>
+
+            <div class="repair-group">
+                <button class="btn-repair btn-with-wood" onclick="repairWithWood()">消耗材料加固<br><span style="font-weight:normal; font-size:0.6rem">3木板 + 500¥</span></button>
+                <button class="btn-repair btn-with-money" onclick="repairWithMoney()">紧急重修木筏<br><span style="font-weight:normal; font-size:0.6rem">5000¥ 直接全满</span></button>
             </div>
         </div>
 
-        <div class="section-title">我的习惯清单</div>
-        <div id="habitList">
-            <!-- 习惯项将在这里动态生成 -->
+        <div id="habitList"></div>
+
+        <!-- Story Style Log -->
+        <div class="log-panel">
+            <div class="log-header">NAVIGATION LOG</div>
+            <div id="latestLog" class="log-content">海面波光粼粼，木筏平稳前行。</div>
         </div>
 
-        <button class="btn-add-habit" onclick="navigate('addPage')">+ 添加新习惯</button>
+        <button class="btn-add-habit-main" onclick="navigate('addPage')">+ 开启新航线</button>
     </div>
 
-    <!-- 添加页面 -->
+    <!-- 丰富的添加习惯页 -->
     <div id="addPage" class="page">
-        <div class="add-header">
-            <h2 style="color: var(--secondary)">新增习惯任务</h2>
-            <p style="color: var(--text-sub)">设定目标，赚取你的现实奖励</p>
+        <div style="margin-bottom: 25px; padding-left: 10px;">
+            <h2 style="color: var(--secondary); margin-bottom: 5px;">新增生活航标</h2>
+            <p style="color: var(--text-sub); font-size: 0.85rem; margin: 0;">设定新的航线，让木筏驶向远方</p>
         </div>
-
-        <div class="input-group">
-            <label>习惯名称</label>
-            <input type="text" id="habitName" placeholder="例如：12点前睡觉">
+        
+        <div class="input-card">
+            <div class="input-group">
+                <label>任务/习惯名称</label>
+                <input type="text" id="habitName" placeholder="例如：日语听力练习 15min">
+            </div>
+            <div class="input-group">
+                <label>打卡回报 (JPY)</label>
+                <input type="number" id="habitReward" value="500">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="input-group">
+                    <label>周目标次数</label>
+                    <input type="number" id="habitBonusGoal" placeholder="5">
+                </div>
+                <div class="input-group">
+                    <label>周奖励 (Bonus)</label>
+                    <input type="number" id="habitBonus" placeholder="2000">
+                </div>
+            </div>
+            <button class="btn-check" style="width:100%; padding: 18px; margin-top: 10px;" onclick="saveAndReturn()">确 认</button>
+            <button onclick="navigate('homePage')" style="width:100%; background:none; border:none; margin-top:15px; color:var(--text-sub); cursor:pointer;">返回海面</button>
         </div>
-
-        <div class="input-group">
-            <label>完成目标</label>
-            <input type="text" id="habitTarget" placeholder="例如：每周5次以上">
-        </div>
-
-        <div class="input-group">
-            <label>悬赏金额 (日元)</label>
-            <input type="number" id="habitReward" placeholder="例如：2000">
-        </div>
-
-        <button class="btn-finish" onclick="saveAndReturn()">完成！</button>
-        <button class="btn-cancel" onclick="navigate('homePage')">取消并返回</button>
     </div>
 </div>
 
 <script>
-    // 页面跳转逻辑
-    function navigate(pageId) {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.getElementById(pageId).classList.add('active');
+    let userData = JSON.parse(localStorage.getItem('lifeRpgOceanFinal_V5')) || {
+        balance: 0, totalEarned: 0, wood: 0, hp: 100, level: 0,
+        logs: ["木筏离开了港口，开启了这场修行。"],
+        habits: [
+            { name: "12点前睡", reward: 1000, bonus: 3000, bonusGoal: 5, count: 0 },
+            { name: "学日语", reward: 500, bonus: 2000, bonusGoal: 5, count: 0 }
+        ]
+    };
+
+    function navigate(p) {
+        document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
+        document.getElementById(p).classList.add('active');
         window.scrollTo(0,0);
     }
 
-    // 从本地存储读取数据
-    let habits = JSON.parse(localStorage.getItem('lifeRpgData')) || [];
-
-    // 渲染主页列表
-    function render() {
-        const list = document.getElementById('habitList');
-        list.innerHTML = '';
-        
-        habits.forEach(h => {
-            const item = document.createElement('div');
-            item.className = 'quest-item';
-            item.innerHTML = `
-                <div class="quest-info">
-                    <strong style="display:block">${h.name}</strong>
-                    <span style="font-size:0.8rem; color:var(--text-sub)">${h.target}</span>
-                </div>
-                <div class="quest-reward">¥ ${h.reward}</div>
-            `;
-            list.appendChild(item);
-        });
-
-        // 自动计算总分和等级 (简单演示逻辑)
-        const total = habits.reduce((sum, h) => sum + parseInt(h.reward), 0);
-        document.getElementById('balanceDisplay').innerText = `¥ ${total}`;
-        document.getElementById('lvDisplay').innerText = `Lv.${Math.floor(Math.sqrt(total/100)) || 1}`;
-    }
-
-    // 保存并跳转
-    function saveAndReturn() {
-        const name = document.getElementById('habitName').value;
-        const target = document.getElementById('habitTarget').value;
-        const reward = document.getElementById('habitReward').value;
-
-        if (name && target && reward) {
-            habits.push({ name, target, reward });
-            localStorage.setItem('lifeRpgData', JSON.stringify(habits));
-            
-            // 清空输入框
-            document.getElementById('habitName').value = '';
-            document.getElementById('habitTarget').value = '';
-            document.getElementById('habitReward').value = '';
-
-            render(); // 更新主页数据
-            navigate('homePage'); // 跳回主页
-        } else {
-            alert("请填写完整信息哦！");
+    function checkLevelUp() {
+        const nextLv = Math.floor(userData.totalEarned / 5000);
+        if (nextLv > userData.level) {
+            userData.level = nextLv;
+            triggerConfetti();
+            const ship = document.getElementById('shipVisual');
+            ship.classList.add('ship-level-up');
+            setTimeout(() => ship.classList.remove('ship-level-up'), 1000);
+            userData.logs.push(`🎉 晋升！你现在是 Lv.${userData.level} 的船长了！`);
         }
     }
 
-    // 初始加载渲染
+    function getRanks(lv) {
+        const ranks = ["见习船员", "初级水手", "资深舵手", "海域探险家", "木筏大师", "无畏船长"];
+        return ranks[Math.min(lv, ranks.length - 1)];
+    }
+
+    function triggerConfetti() {
+        for (let i = 0; i < 40; i++) {
+            const piece = document.createElement('div');
+            piece.className = 'confetti-piece';
+            piece.style.left = Math.random() * 100 + 'vw';
+            piece.style.backgroundColor = ['#6c5ce7', '#fab1a0', '#55efc4', '#fdcb6e'][Math.floor(Math.random()*4)];
+            piece.style.width = Math.random() * 8 + 4 + 'px';
+            piece.style.animationDelay = Math.random() * 0.5 + 's';
+            document.body.appendChild(piece);
+            setTimeout(() => piece.remove(), 2500);
+        }
+    }
+
+    function render() {
+        const currentXp = userData.totalEarned % 5000;
+        const xpPercent = (currentXp / 5000) * 100;
+        document.getElementById('xpFill').style.width = xpPercent + '%';
+        document.getElementById('xpText').innerText = Math.floor(xpPercent) + '%';
+        
+        document.getElementById('levelLabel').innerText = getRanks(userData.level);
+        document.getElementById('rankDisplay').innerText = `里程: Lv.${userData.level}`;
+        
+        const hpBar = document.getElementById('hpFill');
+        hpBar.style.width = userData.hp + '%';
+        hpBar.className = userData.hp < 40 ? 'hp-bar-fill' : 'hp-bar-fill hp-healthy';
+        
+        document.getElementById('balanceDisplay').innerText = userData.balance;
+        document.getElementById('woodDisplay').innerText = userData.wood;
+        document.getElementById('latestLog').innerText = userData.logs[userData.logs.length - 1];
+        document.getElementById('shipVisual').innerText = userData.hp < 30 ? "🏚️" : "🛶";
+
+        const list = document.getElementById('habitList');
+        list.innerHTML = '';
+        userData.habits.forEach((h, index) => {
+            const item = document.createElement('div');
+            item.className = 'quest-item';
+            item.innerHTML = `
+                <div style="flex:1">
+                    <strong style="font-size:1.1rem; display:block;">${h.name}</strong>
+                    <div style="font-size:0.75rem; color:var(--secondary); margin-top:4px;">
+                        进度: ${h.count}${h.bonusGoal ? '/'+h.bonusGoal : ''} | 收益: ¥${h.reward}
+                    </div>
+                </div>
+                <button class="btn-check" onclick="checkHabit(${index})">打卡</button>
+            `;
+            list.appendChild(item);
+        });
+    }
+
+    function checkHabit(index) {
+        const h = userData.habits[index];
+        h.count++;
+        userData.balance += parseInt(h.reward);
+        userData.totalEarned += parseInt(h.reward);
+        
+        let msg = `完成了 ${h.name}，感觉到更自律了。`;
+        if (h.bonusGoal && h.count === parseInt(h.bonusGoal)) {
+            userData.balance += parseInt(h.bonus);
+            userData.totalEarned += parseInt(h.bonus);
+            msg = `🎉 本周 ${h.name} 达成目标，额外获得补贴 ¥${h.bonus}！`;
+        }
+        if (Math.random() < 0.4) userData.wood += 1;
+        
+        userData.logs.push(msg);
+        if(userData.logs.length > 5) userData.logs.shift();
+        checkLevelUp(); saveData(); render();
+    }
+
+    function repairWithWood() {
+        if (userData.wood >= 3 && userData.balance >= 500) {
+            userData.wood -= 3; userData.balance -= 500;
+            userData.hp = Math.min(100, userData.hp + 30);
+            triggerRepairFlash();
+            userData.logs.push("用捡来的木头细心加固了木筏。");
+            saveData(); render();
+        } else { alert("材料不足（3木板+500¥）"); }
+    }
+
+    function repairWithMoney() {
+        if (userData.balance >= 5000) {
+            userData.balance -= 5000; userData.hp = 100;
+            triggerRepairFlash();
+            userData.logs.push("虽然心疼钱，但木筏现在焕然一新！");
+            saveData(); render();
+        } else { alert("金币不足（5000¥）"); }
+    }
+
+    function triggerRepairFlash() {
+        const card = document.getElementById('shipCard');
+        card.classList.add('repair-flash');
+        setTimeout(() => card.classList.remove('repair-flash'), 600);
+    }
+
+    function saveAndReturn() {
+        const name = document.getElementById('habitName').value;
+        const reward = document.getElementById('habitReward').value;
+        const bGoal = document.getElementById('habitBonusGoal').value;
+        const bReward = document.getElementById('habitBonus').value;
+
+        if (name && reward) {
+            userData.habits.push({ name, reward: parseInt(reward), bonus: parseInt(bReward || 0), bonusGoal: parseInt(bGoal || 0), count: 0 });
+            saveData(); render(); navigate('homePage');
+        }
+    }
+
+    function saveData() { localStorage.setItem('lifeRpgOceanFinal_V5', JSON.stringify(userData)); }
+    
+    if(Math.random() > 0.5) { userData.hp = Math.max(5, userData.hp - 5); saveData(); }
+
     render();
 </script>
-
 </body>
 </html>
