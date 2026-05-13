@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LIFE RPG - Ocean of Self</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --bg-color: #b7e1f5;
@@ -568,6 +570,9 @@ function playClickSound() {
 
 
 
+
+
+  
   
   
     // 自动加载/初始化数据
@@ -853,7 +858,11 @@ grid.appendChild(box);
         }
     }
 
-    function saveData() { localStorage.setItem('lifeRpgOceanFinal_V6', JSON.stringify(userData)); }
+    function saveData() { localStorage.setItem('lifeRpgOceanFinal_V6', JSON.stringify(userData)); 
+                        if (typeof window.syncToCloud === 'function') {
+        window.syncToCloud();
+    }
+                        }
     
     // 每日损耗模拟
     if(Math.random() > 0.7) { userData.hp = Math.max(5, userData.hp - 5); saveData(); }
@@ -917,8 +926,35 @@ window.changeMonth = function(step) {
 //    const grid = document.getElementById('matrixGrid'); // 必须叫这个名字
 //    ...
 // }
-  
+
+
   
 </script>
+
+ <script>
+    (function() {
+        const url = 'https://yfhhzlupjbkmgvmtohwi.supabase.co';
+        const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlmaGh6bHVwamJrbWd2bXRvaHdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NTk4OTcsImV4cCI6MjA5NDEzNTg5N30.6VN_Gau35D-_BvFp0-rIrz2UO79a-4sbxn-snaAvI3c';
+        
+        window.syncToCloud = async function() {
+            if (typeof window.supabase === 'undefined') {
+                console.error("【失败】没有引入 Supabase 工具包！");
+                return;
+            }
+            const _supabase = window.supabase.createClient(url, key);
+            let currentData = JSON.parse(localStorage.getItem('lifeRpgOceanFinal_V6'));
+            if (!currentData) return;
+
+            const { data, error } = await _supabase
+                .from('user_data')
+                .upsert({ username: "Captain", game_json: currentData }, { onConflict: 'username' });
+
+            if (!error) {
+                console.log('【云端同步成功】🚢✨');
+            }
+        };
+    })();
+</script>
+  
 </body>
 </html>
