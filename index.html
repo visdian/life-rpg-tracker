@@ -943,12 +943,20 @@ window.changeMonth = function(step) {
             let currentData = JSON.parse(localStorage.getItem('lifeRpgOceanFinal_V6'));
             if (!currentData) return;
 
+            // 【精准修复】这里加上 id: 1，并且把冲突判定改为 'id'
+            // 这样无论如何，只要你在同个手机/电脑上打卡，都会稳定覆盖数据库里 id 为 1 的那一行数据
             const { data, error } = await _supabase
                 .from('user_data')
-                .upsert({ username: "Captain", game_json: currentData }, { onConflict: 'username' });
+                .upsert(
+                    { id: 1, username: "Captain", game_json: currentData }, 
+                    { onConflict: 'id' }
+                );
 
             if (!error) {
                 console.log('【云端同步成功】🚢✨');
+            } else {
+                // 如果还是失败，这行代码会在控制台打印出具体原因，方便我们排查
+                console.error('【云端同步失败】原因：', error.message);
             }
         };
     })();
