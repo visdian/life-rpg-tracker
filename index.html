@@ -6,9 +6,7 @@
     <title>LIFE RPG - Ocean of Self</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
     <style>
-        /* 1. 全局颜色变量配置 */
         :root {
             --bg-color: #b7e1f5;
             --card-bg: rgba(255, 255, 255, 0.88);
@@ -18,64 +16,63 @@
             --xp-color: #6c5ce7;
             --text-main: #323232;
             --text-sub: #636e72;
-            --level-1: #c6e48b;
-            --level-2: #7bc96f;
-            --level-3: #239a3b;
-            --level-4: #196127;
+            /* 日历格子基础：精致虚线框 */
+.matrix-box { 
+    aspect-ratio: 1; 
+    width: 35px; /* 固定宽度 */
+    height: 35px; /* 固定高度 */
+    background: transparent; 
+    border: 1px dashed rgba(32, 178, 170, 0.4); 
+    border-radius: 10px; 
+    cursor: pointer; 
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    color: rgba(32, 178, 170, 0.6);
+}
+
+/* 核心颜色关联：让类名真正涂上你 root 里的颜色 */
+/* 使用 !important 确保覆盖掉之前的透明背景 */
+
+.matrix-box.level-1 { 
+    background-color: var(--level-1) !important; 
+    border: 1px solid var(--level-1) !important; 
+    color: white; 
+}
+.matrix-box.level-2 { 
+    background-color: var(--level-2) !important; 
+    border: 1px solid var(--level-2) !important; 
+    color: white; 
+}
+.matrix-box.level-3 { 
+    background-color: var(--level-3) !important; 
+    border: 1px solid var(--level-3) !important; 
+    color: white; 
+}
+.matrix-box.level-4 { 
+    background-color: var(--level-4) !important; 
+    border: 1px solid var(--level-4) !important; 
+    color: white; 
+    box-shadow: 0 0 10px rgba(255,165,0,0.3);
+}
+
+/* 今天的特殊标记：醒目的加粗虚线 */
+.matrix-box.is-today {
+    border: 2px dashed var(--primary) !important;
+    color: var(--primary);
+    font-weight: bold;
+}
+
+/* 如果有数据但等级很低，至少显示 level-1 */
+.matrix-box.has-data {
+    border-style: solid !important;
+}
         }
 
-        /* 2. 日历格子基础：精致虚线框 */
-        .matrix-box { 
-            aspect-ratio: 1; 
-            width: 35px; 
-            height: 35px; 
-            background: transparent; 
-            border: 1px dashed rgba(32, 178, 170, 0.4); 
-            border-radius: 10px; 
-            cursor: pointer; 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-            box-sizing: border-box;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7rem;
-            color: rgba(32, 178, 170, 0.6);
-        }
-
-        /* 3. 核心颜色关联 */
-        .matrix-box.level-1 { 
-            background-color: var(--level-1) !important; 
-            border: 1px solid var(--level-1) !important; 
-            color: white; 
-        }
-        .matrix-box.level-2 { 
-            background-color: var(--level-2) !important; 
-            border: 1px solid var(--level-2) !important; 
-            color: white; 
-        }
-        .matrix-box.level-3 { 
-            background-color: var(--level-3) !important; 
-            border: 1px solid var(--level-3) !important; 
-            color: white; 
-        }
-        .matrix-box.level-4 { 
-            background-color: var(--level-4) !important; 
-            border: 1px solid var(--level-4) !important; 
-            color: white; 
-            box-shadow: 0 0 10px rgba(255,165,0,0.3);
-        }
-
-        .matrix-box.is-today {
-            border: 2px dashed var(--primary) !important;
-            color: var(--primary);
-            font-weight: bold;
-        }
-
-        .matrix-box.has-data {
-            border-style: solid !important;
-        }
-
-        /* 核心动画 */
+        /* 继承你原有的核心动画 */
         @keyframes float { 0%, 100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-10px) rotate(1deg); } }
         @keyframes waveMove { 0% { transform: translateX(0) translateY(0); } 50% { transform: translateX(-40px) translateY(10px); } 100% { transform: translateX(0) translateY(0); } }
         @keyframes levelUpPop { 0% { transform: scale(1); } 50% { transform: scale(1.4); filter: brightness(1.2); } 100% { transform: scale(1); } }
@@ -90,6 +87,7 @@
             transition: background 1s ease;
         }
 
+        /* 背景波浪线 */
         .wave-container { position: fixed; top: 0; left: 0; width: 200%; height: 100%; z-index: -1; pointer-events: none; }
         .wave-line { position: absolute; width: 100%; height: 200px; border-top: 3px solid rgba(255, 255, 255, 0.4); border-radius: 40%; animation: waveMove 12s ease-in-out infinite; }
         .wave1 { top: 20%; animation-duration: 15s; opacity: 0.6; }
@@ -101,10 +99,12 @@
 
         .container { width: 100%; max-width: 500px; margin: 0 auto; padding: 30px 20px 120px; box-sizing: border-box; }
 
+        /* 页面切换逻辑 CSS */
         .page { display: none; }
         .page.active { display: block; animation: fadeIn 0.4s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* 状态面板 */
         .ship-status {
             background: var(--card-bg); padding: 30px 25px; border-radius: 35px;
             text-align: center; margin-bottom: 25px;
@@ -132,67 +132,202 @@
         .btn-with-money { background: white; color: var(--accent); border: 1.5px solid var(--accent); }
         .repair-flash { animation: repairWave 0.6s ease-out; }
 
+        /* 习惯列表 */
         .quest-item { background: var(--card-bg); padding: 22px; border-radius: 28px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.6); }
         .btn-check { background: var(--primary); color: white; border: none; padding: 14px 28px; border-radius: 18px; font-weight: bold; cursor: pointer; }
 
-        .matrix-grid { 
-            display: grid; 
-            grid-template-columns: repeat(7, 35px); 
-            gap: 8px; 
-            justify-content: center; 
-            margin: 0 auto;
-        }
 
-        .matrix-grid .matrix-box { 
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
-            position: relative !important;
-        }
 
-        .matrix-grid .matrix-box:hover { 
-            transform: scale(1.3) translateY(-8px) !important; 
-            z-index: 99 !important;
-            border-style: solid !important;
-            border-color: var(--primary) !important;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.15) !important;
-        }
 
-        .matrix-grid .matrix-box:active { transform: scale(1.2) translateY(-4px) !important; }
+      
+      
+/* 日历容器：取消强制铺满，改为紧凑排列 */
+.matrix-grid { 
+    display: grid; 
+    grid-template-columns: repeat(7, 35px); /* 核心修改：固定宽度为35px，可根据喜好调成30-40 */
+    gap: 8px; 
+    justify-content: center; /* 居中显示 */
+    margin: 0 auto;
+}
 
-        .log-panel { 
-            background: rgba(255,255,255,0.2); 
-            padding: 18px; 
-            border-radius: 22px; 
-            margin-top: 30px;    
-            margin-bottom: 20px; 
-            border-left: 4px solid var(--primary); 
-            backdrop-filter: blur(5px); 
-        }
-        
+/* 调整格子大小 */
+/* 强制覆盖：将这段代码放在 <style> 标签的最末尾 */
+
+/* 1. 确保基础状态有过渡动画 */
+.matrix-grid .matrix-box { 
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+    position: relative !important;
+}
+
+/* 2. 悬停效果：增加 !important 确保强制执行 */
+.matrix-grid .matrix-box:hover { 
+    transform: scale(1.3) translateY(-8px) !important; 
+    z-index: 99 !important;
+    border-style: solid !important;
+    border-color: var(--primary) !important;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.15) !important;
+}
+
+/* 3. 针对手机触摸的微调（如果是在手机上测试） */
+.matrix-grid .matrix-box:active {
+    transform: scale(1.2) translateY(-4px) !important;
+}
+  
+}
+/* 日志面板 */
+.log-panel { 
+    background: rgba(255,255,255,0.2); 
+    padding: 18px; 
+    border-radius: 22px; 
+    
+    /* --- 核心修改在这里 --- */
+    margin-top: 30px;    /* 增加上方间距，数值越大距离越远 */
+    /* --------------------- */
+    
+    margin-bottom: 20px; 
+    border-left: 4px solid var(--primary); 
+    backdrop-filter: blur(5px); 
+}
+      
+        /* 日志面板 */
+        .log-panel { background: rgba(255,255,255,0.2); padding: 18px; border-radius: 22px; margin-bottom: 20px; border-left: 4px solid var(--primary); backdrop-filter: blur(5px); }
         .log-header { font-size: 0.7rem; color: var(--primary); font-weight: 800; letter-spacing: 1.5px; margin-bottom: 5px; }
         .log-content { font-size: 0.9rem; line-height: 1.5; color: var(--text-main); }
 
+        /* 底部导航栏 */
         .bottom-nav { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); width: 280px; height: 65px; background: rgba(255,255,255,0.9); backdrop-filter: blur(15px); border-radius: 35px; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index: 1000; border: 1px solid rgba(255,255,255,0.5); }
         .nav-item { font-size: 1.5rem; cursor: pointer; opacity: 0.3; transition: 0.3s; padding: 10px; }
         .nav-item.active { opacity: 1; transform: translateY(-5px); filter: drop-shadow(0 5px 5px rgba(0,0,0,0.1)); }
 
         .input-card { background: var(--card-bg); padding: 25px; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-        .input-group { margin-bottom: 25px; }
-        .input-group label { display: block; font-size: 0.7rem; color: var(--secondary); margin-bottom: 12px; font-weight: 800; letter-spacing: 2px; }
+        input { width: 100%; padding: 16px; border: 1.5px solid #e1e8ed; border-radius: 16px; box-sizing: border-box; font-size: 1rem; margin-top: 10px;}
+        .confetti-piece { position: fixed; width: 8px; height: 8px; top: -10px; z-index: 2000; animation: confetti 2.5s linear forwards; border-radius: 2px; }
 
-        input {
-            width: 100%; padding: 16px 20px; background: rgba(255, 255, 255, 0.5); border: 1.5px solid #e1e8ed; border-radius: 20px; box-sizing: border-box; font-size: 1rem; color: var(--text-main); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); letter-spacing: 0.5px;
-        }
-        input:focus { outline: none; background: #fff; border-color: var(--primary); box-shadow: 0 8px 20px rgba(32, 178, 170, 0.15); transform: translateY(-2px); }
-        input::placeholder { color: #b2bec3; font-size: 0.9rem; }
+/* 针对添加页面的精致化调整 */
+.input-group {
+    margin-bottom: 25px; /* 增加组与组之间的距离 */
+}
 
-        @keyframes slideUpFade { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-        .log-animation-trigger { animation: slideUpFade 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+.input-group label {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--secondary); 
+    margin-bottom: 12px;
+    font-weight: 800;
+    letter-spacing: 2px; /* 核心修改：让英文和标题看起来更高级 */
+}
 
-        .calendar-nav { display: flex; align-items: center; justify-content: center; gap: 20px; margin: 20px 0; padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: 50px; }
-        .calendar-header { display: flex; justify-content: space-between; align-items: center; background: rgba(249, 234, 244, 0.2); padding: 12px 20px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 15px; }
-        #currentMonthLabel { font-weight: bold; font-size: 1.1rem; color: #ff8f00; letter-spacing: 1px; text-shadow: 0 0 10px rgba(222, 202, 40, 0.5); }
-        .calendar-header span { font-size: 1.2rem; color: var(--secondary); padding: 5px 10px; transition: all 0.3s; user-select: none; cursor: pointer; }
-        .calendar-header span:hover { color: #fff; transform: scale(1.3); text-shadow: 0 0 15px var(--secondary); }
+input {
+    width: 100%;
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.5); /* 半透明感 */
+    border: 1.5px solid #e1e8ed;
+    border-radius: 20px; /* 更圆润 */
+    box-sizing: border-box;
+    font-size: 1rem;
+    color: var(--text-main);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    letter-spacing: 0.5px;
+}
+
+/* 输入框激活时的呼吸感 */
+input:focus {
+    outline: none;
+    background: #fff;
+    border-color: var(--primary);
+    box-shadow: 0 8px 20px rgba(32, 178, 170, 0.15);
+    transform: translateY(-2px); /* 轻微浮起 */
+}
+
+/* 让输入框的占位文字也带点间距 */
+input::placeholder {
+    color: #b2bec3;
+    letter-spacing: 0px;
+    font-size: 0.9rem;
+}
+
+  /* 日志面板 */
+.log-panel { 
+    background: rgba(255,255,255,0.2); 
+    padding: 18px; 
+    border-radius: 22px; 
+    
+    /* --- 核心修改在这里 --- */
+    margin-top: 30px;    /* 增加上方间距，数值越大距离越远 */
+    /* --------------------- */
+    
+    margin-bottom: 20px; 
+    border-left: 4px solid var(--primary); 
+    backdrop-filter: blur(5px); 
+}
+      
+/* 日志浮现动画：向上滑入并淡入 */
+@keyframes slideUpFade {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 动画触发类 */
+.log-animation-trigger {
+    animation: slideUpFade 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+      /* 导航容器 */
+.calendar-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin: 20px 0;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 50px;
+}
+
+      
+/* 让日历头部变漂亮 */
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(249, 234, 244, 0.2); /* 深色半透明背景 */
+    padding: 12px 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 15px;
+}
+
+/* 年月文字：金色质感 */
+#currentMonthLabel {
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: #ff8f00; /* 航海金 */
+    letter-spacing: 1px;
+    text-shadow: 0 0 10px rgba(222, 202, 40, 0.5);
+}
+
+/* 左右箭头：呼吸灯效果 */
+.calendar-header span:first-child, 
+.calendar-header span:last-child {
+    font-size: 1.2rem;
+    color: var(--secondary);
+    padding: 5px 10px;
+    transition: all 0.3s;
+    user-select: none; /* 防止点击太快选中文字 */
+}
+
+.calendar-header span:hover {
+    color: #fff;
+    transform: scale(1.3);
+    text-shadow: 0 0 15px var(--secondary);
+}
+      
     </style>
 </head>
 <body>
@@ -206,6 +341,7 @@
 <div class="xp-container"><div id="xpFill" class="xp-fill"></div></div>
 
 <div class="container">
+    <!-- 首页：海面 -->
     <div id="homePage" class="page active">
         <div class="ship-status" id="shipCard">
             <div class="level-badge" id="levelLabel">见习船员</div>
@@ -226,8 +362,8 @@
             </div>
 
             <div class="repair-group">
-                <button class="btn-repair btn-with-wood" onclick="repairWithWood()">消耗材料加固<br><span style="font-weight:normal; font-size:0.6rem">1木板 (回复10HP)</span></button>
-                <button class="btn-repair btn-with-money" onclick="repairWithMoney()">紧急重修木筏<br><span style="font-weight:normal; font-size:0.6rem">500¥ (回复30HP)</span></button>
+                <button class="btn-repair btn-with-wood" onclick="repairWithWood()">消耗材料加固<br><span style="font-weight:normal; font-size:0.6rem">3木板 + 500¥</span></button>
+                <button class="btn-repair btn-with-money" onclick="repairWithMoney()">紧急重修木筏<br><span style="font-weight:normal; font-size:0.6rem">5000¥ 直接全满</span></button>
             </div>
         </div>
 
@@ -239,21 +375,7 @@
         </div>
     </div>
 
-    <div id="addPage" class="page">
-        <div class="input-card">
-            <h2 style="color: var(--primary); margin-bottom: 25px; font-weight: 800;">登记新习惯</h2>
-            <div class="input-group">
-                <label>HABIT NAME / 习惯名称</label>
-                <input type="text" id="habitName" placeholder="例如：背单词、晨跑、冥想...">
-            </div>
-            <div class="input-group">
-                <label>GOLD REWARD / 金币奖励 (¥)</label>
-                <input type="number" id="habitReward" placeholder="完成一次可获得的金币数">
-            </div>
-            <button class="btn-check" style="width: 100%; margin-top: 20px;" onclick="saveAndReturn()">扬帆启航 (添加)</button>
-        </div>
-    </div>
-
+    <!-- 统计页：航迹图 -->
     <div id="calendarPage" class="page">
         <div style="margin-bottom: 25px; padding-left: 10px;">
             <h2 style="color: var(--secondary); margin-bottom: 5px;">航行轨迹</h2>
@@ -262,9 +384,9 @@
 
         <div class="matrix-card">
             <div class="calendar-header">
-                <span onclick="window.changeMonth(-1)">◀</span>
-                <span id="currentMonthLabel">2026年 5月</span>
-                <span onclick="window.changeMonth(1)">▶</span>
+                <span onclick="changeMonth(-1)" style="cursor:pointer">◀</span>
+                <span id="currentMonthLabel">2024年 5月</span>
+                <span onclick="changeMonth(1)" style="cursor:pointer">▶</span>
             </div>
             <div class="matrix-grid" id="matrixGrid"></div>
         </div>
@@ -274,87 +396,186 @@
             <div id="selectedDateLog" class="log-content">选择一个日期来查看记录...</div>
         </div>
     </div>
+
+
+  
+    <!-- 丰富的添加习惯页 -->
+<div id="addPage" class="page">
+    <div style="margin-bottom: 30px; padding: 0 10px;">
+        <h2 style="color: var(--secondary); margin-bottom: 8px; letter-spacing: 3px; font-weight: 900;">新增生活航标</h2>
+        <p style="color: var(--text-sub); font-size: 0.85rem; margin: 0; letter-spacing: 1px; line-height: 1.6;">设定新的航线，让木筏驶向远方</p>
+    </div>
+    
+    <div class="input-card">
+        <div class="input-group">
+            <label>MISSION NAME / 任务名称</label>
+            <input type="text" id="habitName" placeholder="例如：日语练习 15min">
+        </div>
+
+        <div class="input-group">
+            <label>BASIC REWARD / 打卡回报 (JPY)</label>
+            <input type="number" id="habitReward" value="500">
+        </div>
+
+        <!-- 并排布局 -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="input-group">
+                <label>GOAL / 周目标</label>
+                <input type="number" id="habitBonusGoal" placeholder="5">
+            </div>
+            <div class="input-group">
+                <label>BONUS / 周奖励</label>
+                <input type="number" id="habitBonus" placeholder="2000">
+            </div>
+        </div>
+
+        <div style="margin-top: 30px;">
+            <button class="btn-check" style="width:100%; padding: 20px; font-size: 1rem; letter-spacing: 4px;" onclick="saveAndReturn()">确 认 航 线</button>
+            <button onclick="navigate('homePage', document.querySelector('.nav-item'))" style="width:100%; background:none; border:none; margin-top:20px; color:var(--text-sub); cursor:pointer; font-size: 0.8rem; letter-spacing: 1px;">返回海面</button>
+        </div>
+    </div>
 </div>
 
+
+  
+<!-- 底部导航栏 -->
 <div class="bottom-nav">
-    <div class="nav-item active" onclick="navigate('homePage', this)">🌊</div>
+    <div class="nav-item active" onclick="navigate('homePage', this)">🏠</div>
     <div class="nav-item" onclick="navigate('addPage', this)">➕</div>
     <div class="nav-item" onclick="navigate('calendarPage', this)">🗺️</div>
 </div>
 
+
+
+
+  
 <script>
-    // --- 1. 音效系统 ---
-    async function playPrecisionRepairSound() {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') await audioCtx.resume();
-        const times = [0, 0.12, 0.24];
-        times.forEach((startTime, index) => {
-            const osc = audioCtx.createOscillator();
-            const oscGain = audioCtx.createGain();
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(1000 + (index * 100), audioCtx.currentTime + startTime);
-            osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + startTime + 0.1);
 
-            const bufferSize = audioCtx.sampleRate * 0.1;
-            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-            const data = buffer.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-            const noise = audioCtx.createBufferSource();
-            noise.buffer = buffer;
 
-            const filter = audioCtx.createBiquadFilter();
-            filter.type = 'bandpass';
-            filter.frequency.value = 3000;
-            const noiseGain = audioCtx.createGain();
 
-            oscGain.gain.setValueAtTime(0, audioCtx.currentTime + startTime);
-            oscGain.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + startTime + 0.01);
-            oscGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + startTime + 0.1);
+  
+async function playPrecisionRepairSound() {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') await audioCtx.resume();
 
-            noiseGain.gain.setValueAtTime(0, audioCtx.currentTime + startTime);
-            noiseGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + startTime + 0.01);
-            noiseGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + startTime + 0.08);
+    const times = [0, 0.12, 0.24]; // 节奏稍微快一点点，显得更有干劲
 
-            osc.connect(oscGain); noise.connect(filter); filter.connect(noiseGain);
-            oscGain.connect(audioCtx.destination); noiseGain.connect(audioCtx.destination);
+    times.forEach((startTime, index) => {
+        // 1. 创建金属敲击声部分 (Triangle Wave)
+        const osc = audioCtx.createOscillator();
+        const oscGain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(1000 + (index * 100), audioCtx.currentTime + startTime);
+        osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + startTime + 0.1);
 
-            osc.start(audioCtx.currentTime + startTime); noise.start(audioCtx.currentTime + startTime);
-            osc.stop(audioCtx.currentTime + startTime + 0.1); noise.stop(audioCtx.currentTime + startTime + 0.1);
-        });
-    }
-
-    function playSawingSound() {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const bufferSize = audioCtx.sampleRate * 0.4;
+        // 2. 创建白噪声部分 (磨砂/白噪质感)
+        const bufferSize = audioCtx.sampleRate * 0.1;
         const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
         const data = buffer.getChannelData(0);
         for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+        
         const noise = audioCtx.createBufferSource();
         noise.buffer = buffer;
+
+        // 3. 噪声滤波器 (让白噪听起来像金属摩擦而不是下雨)
         const filter = audioCtx.createBiquadFilter();
-        filter.type = 'lowpass'; filter.frequency.setValueAtTime(1000, audioCtx.currentTime);
-        const gainNode = audioCtx.createGain();
-        gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-        gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.1);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-        noise.connect(filter); filter.connect(gainNode); gainNode.connect(audioCtx.destination);
-        noise.start(); noise.stop(audioCtx.currentTime + 0.4);
+        filter.type = 'bandpass';
+        filter.frequency.value = 3000; // 高频摩擦感
+
+        const noiseGain = audioCtx.createGain();
+
+        // 4. 设定音量包络
+        oscGain.gain.setValueAtTime(0, audioCtx.currentTime + startTime);
+        oscGain.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + startTime + 0.01);
+        oscGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + startTime + 0.1);
+
+        noiseGain.gain.setValueAtTime(0, audioCtx.currentTime + startTime);
+        noiseGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + startTime + 0.01);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + startTime + 0.08);
+
+        // 连接所有节点
+        osc.connect(oscGain);
+        noise.connect(filter);
+        filter.connect(noiseGain);
+        
+        oscGain.connect(audioCtx.destination);
+        noiseGain.connect(audioCtx.destination);
+
+        osc.start(audioCtx.currentTime + startTime);
+        noise.start(audioCtx.currentTime + startTime);
+        osc.stop(audioCtx.currentTime + startTime + 0.1);
+        noise.stop(audioCtx.currentTime + startTime + 0.1);
+    });
+}
+  
+
+function playSawingSound() {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // 创建一个白噪声生成器（模拟摩擦声）
+    const bufferSize = audioCtx.sampleRate * 0.4; // 持续0.4秒
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1; // 生成随机噪声
     }
 
-    function playClickSound() {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const oscillator = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.1);
-        gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-        oscillator.connect(gainNode); gainNode.connect(audioCtx.destination);
-        oscillator.start(); oscillator.stop(audioCtx.currentTime + 0.1);
-    }
+    const noise = audioCtx.createBufferSource();
+    noise.buffer = buffer;
 
-    // --- 2. 数据与页面控制模型 ---
+    // 创建滤波器，让声音听起来厚重一些（像木头而不是收音机杂音）
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(1000, audioCtx.currentTime);
+
+    const gainNode = audioCtx.createGain();
+
+    // 模拟拉锯的动作：声音先大再小，带有一点节奏感
+    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.1); // 压下去的声音
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4); // 抬起来的声音
+
+    noise.connect(filter);
+    filter.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    noise.start();
+    noise.stop(audioCtx.currentTime + 0.4);
+}
+  
+
+// 生成一个圆润的“水滴/木琴”音效
+function playClickSound() {
+    // 创建音频上下文
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    oscillator.type = 'sine'; // 正弦波，声音最圆润
+    
+    // 设定频率：从 800Hz 快速降到 400Hz，产生“砰”的圆润质感
+    oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.1);
+
+    // 设定音量：快速淡出，避免刺耳
+    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    oscillator.start();
+    oscillator.stop(audioCtx.currentTime + 0.1);
+}
+
+
+
+
+
+  
+  
+  
+    // 自动加载/初始化数据
     let userData = JSON.parse(localStorage.getItem('lifeRpgOceanFinal_V6')) || {
         balance: 0, totalEarned: 0, wood: 0, hp: 100, level: 0,
         logs: ["木筏离开了港口，开启了这场修行。"],
@@ -365,25 +586,71 @@
         history: {} 
     };
 
-    window.displayDate = new Date();
+    // --- 核心修复点 1：确保 displayDate 是全局变量 ---
+    var displayDate = new Date();
 
     function navigate(p, el) {
         document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(ni => ni.classList.remove('active'));
         document.getElementById(p).classList.add('active');
         if(el) el.classList.add('active');
+        
+        
         if(p === 'calendarPage') renderMatrix(); 
+        
         window.scrollTo(0,0);
     }
 
-    // --- 3. 核心界面渲染系统 ---
+    // --- 核心修复点 3：补上这个“失踪”的 renderMatrix 函数 ---
+    function renderMatrix() {
+        const grid = document.getElementById('calendarGrid');
+        const title = document.getElementById('currentMonth'); // 假设你有显示月份标题的元素
+        if (!grid) return;
+
+        const year = displayDate.getFullYear();
+        const month = displayDate.getMonth();
+
+        // 如果你有显示“2026年3月”的标题，更新它
+        if (title) title.innerText = `${year}年${month + 1}月`;
+
+        grid.innerHTML = '';
+
+        // 计算这个月的第一天和总天数
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        // 填充空白格子
+        for (let i = 0; i < (firstDay === 0 ? 6 : firstDay - 1); i++) {
+            const empty = document.createElement('div');
+            empty.className = 'calendar-day empty';
+            grid.appendChild(empty);
+        }
+
+        // 填充日期格子
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dayEl = document.createElement('div');
+            dayEl.className = 'calendar-day';
+            dayEl.innerText = d;
+            
+            // 这里可以加上你之前的打卡逻辑判断
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            if (userData.history[dateStr]) {
+                dayEl.classList.add('checked');
+            }
+
+            grid.appendChild(dayEl);
+        }
+    }
+
+    // 核心渲染逻辑
     function render() {
+        // ... 你原本的 render 逻辑保持不变 ...
         const currentXp = userData.totalEarned % 5000;
         const xpPercent = (currentXp / 5000) * 100;
         document.getElementById('xpFill').style.width = xpPercent + '%';
         document.getElementById('xpText').innerText = Math.floor(xpPercent) + '%';
         
-        document.getElementById('levelLabel').innerText = getRanks(userData.level);
+        document.getElementById('levelLabel').innerText = typeof getRanks === 'function' ? getRanks(userData.level) : "航海者";
         document.getElementById('rankDisplay').innerText = `里程: Lv.${userData.level}`;
         
         const hpBar = document.getElementById('hpFill');
@@ -392,7 +659,7 @@
         
         document.getElementById('balanceDisplay').innerText = userData.balance;
         document.getElementById('woodDisplay').innerText = userData.wood;
-        document.getElementById('latestLog').innerText = userData.logs[0] || "暂无日志";
+        document.getElementById('latestLog').innerText = userData.logs[userData.logs.length - 1] || "暂无日志";
         document.getElementById('shipVisual').innerText = userData.hp < 30 ? "🏚️" : "🛶";
 
         const list = document.getElementById('habitList');
@@ -403,7 +670,7 @@
             item.innerHTML = `
                 <div style="flex:1">
                     <strong style="font-size:1.1rem; display:block;">${h.name}</strong>
-                    <div style="font-size:0.75rem; color:var(--secondary); margin-top:4px;">收益: ¥${h.reward} | 已打卡: ${h.count || 0}次</div>
+                    <div style="font-size:0.75rem; color:var(--secondary); margin-top:4px;">收益: ¥${h.reward}</div>
                 </div>
                 <button class="btn-check" onclick="checkHabit(${index})">打卡</button>
             `;
@@ -411,92 +678,100 @@
         });
     }
 
-    // --- 4. 业务交互逻辑 ---
     function checkHabit(index) {
-        playClickSound(); 
+      // --- 核心修改：播放声音 ---
+    playClickSound(); 
+    // ------------------------
         const h = userData.habits[index];
-        h.count = (h.count || 0) + 1;
         userData.balance += parseInt(h.reward);
         userData.totalEarned += parseInt(h.reward);
         
+        // 记录到历史数据
         const today = new Date().toISOString().split('T')[0];
-        userData.history[today] = (userData.history[today] || 0) + parseInt(h.reward);
+    userData.history[today] = (userData.history[today] || 0) + parseInt(h.reward);
 
-        let msg = `【打卡成功】完成了 ${h.name}，增加了 ¥${h.reward} 航海资源。`;
+        let msg = `完成了 ${h.name}，感觉到自己更好了。`;
         if (Math.random() < 0.4) {
             userData.wood += 1;
-            msg += " 顺便在海面上捡到了碎木板！🪵";
+            msg += " 顺便在海面上捡到了碎木板！";
         }
         
-        userData.logs.unshift(msg);
-        if(userData.logs.length > 5) userData.logs.pop();
+        userData.logs.push(msg);
+        if(userData.logs.length > 5) userData.logs.shift();
         checkLevelUp(); saveData(); render();
     }
 
+   
+  
+    // 日历矩阵渲染
     function renderMatrix() {
-        const grid = document.getElementById('matrixGrid');
-        if (!grid) return;
-        grid.innerHTML = '';
-        
-        const year = window.displayDate.getFullYear();
-        const month = window.displayDate.getMonth();
-        
-        const now = new Date();
-        const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    const grid = document.getElementById('matrixGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    
+    const year = displayDate.getFullYear();
+    const month = displayDate.getMonth();
+    
+    // 获取今天的日期字符串 (格式: 2024-05-12)
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 
-        document.getElementById('currentMonthLabel').innerText = `${year}年 ${month + 1}月`;
+    document.getElementById('currentMonthLabel').innerText = `${year}年 ${month + 1}月`;
 
-        const firstDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-        const startOffset = firstDay === 0 ? 6 : firstDay - 1;
-        for(let i=0; i<startOffset; i++) {
-            grid.innerHTML += '<div></div>';
-        }
-
-        for(let d=1; d<=daysInMonth; d++) {
-            const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            const goldEarned = userData.history[dateStr] || 0;
-            
-            let levelClass = '';
-            if(goldEarned > 0) {
-                levelClass = 'has-data ';
-                if(goldEarned <= 500) levelClass += 'level-1';
-                else if(goldEarned > 500 && goldEarned <= 1500) levelClass += 'level-2';
-                else if(goldEarned > 1500 && goldEarned <= 3000) levelClass += 'level-3';
-                else if(goldEarned > 3000) levelClass += 'level-4';
-            }
-
-            if(dateStr === todayStr) levelClass += ' is-today';
-
-            const box = document.createElement('div');
-            box.className = `matrix-box ${levelClass}`;
-            box.innerText = d;
-            
-            box.onclick = () => {
-                const log = document.getElementById('selectedDateLog');
-                const logPanel = log.parentElement;
-
-                logPanel.classList.remove('log-animation-trigger');
-                void logPanel.offsetWidth; 
-                logPanel.classList.add('log-animation-trigger');
-
-                if(goldEarned > 0) {
-                    log.innerHTML = `<div style="color:var(--primary);font-weight:bold;margin-bottom:5px;">${dateStr} 航行日志</div><div style="font-size:0.85rem">· 当天通过坚毅自律共赚取航海金币：¥${goldEarned}。</div>`;
-                } else {
-                    log.innerHTML = `<div style="color:var(--text-sub)">${dateStr}</div><div style="font-size:0.85rem">该日期暂无航行记录。</div>`;
-                }
-            };
-            grid.appendChild(box);
-        }
+    // 1. 填充月份前的空格
+    for(let i=0; i<firstDay; i++) {
+        grid.innerHTML += '<div></div>';
     }
 
-    window.changeMonth = function(step) {
-        window.displayDate.setMonth(window.displayDate.getMonth() + step);
-        renderMatrix();
-        playClickSound();
-    };
+    // 2. 生成每一天的格子
+    for(let d=1; d<=daysInMonth; d++) {
+        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const tasks = userData.history ? (userData.history[dateStr] || []) : [];
+        
+        // 在循环生成格子的时候
+let levelClass = '';
+if(tasks.length > 0) {
+    levelClass = 'has-data '; // 注意这里有个空格
+    if(tasks.length >= 1 && tasks.length < 3) levelClass += 'level-1';
+    else if(tasks.length >= 3 && tasks.length < 5) levelClass += 'level-2';
+    else if(tasks.length >= 5 && tasks.length < 7) levelClass += 'level-3';
+    else if(tasks.length >= 7) levelClass += 'level-4';
+}
 
+        // 判断是否是今天
+        if(dateStr === todayStr) {
+            levelClass += ' is-today';
+        }
+
+        const box = document.createElement('div');
+        box.className = `matrix-box ${levelClass}`;
+        box.innerText = d; // 在格子里显示日期数字，更清楚
+        
+       box.onclick = () => {
+    const log = document.getElementById('selectedDateLog');
+    const logPanel = log.parentElement; // 获取它的父级面板，通常是 .log-panel
+
+    // 1. 触发动画：先移除类，强迫浏览器重绘，再重新添加类
+    logPanel.classList.remove('log-animation-trigger');
+    void logPanel.offsetWidth; // 触发重绘的魔法代码
+    logPanel.classList.add('log-animation-trigger');
+
+    // 2. 原有的内容填充逻辑
+    if(tasks.length > 0) {
+        log.innerHTML = `<div style="color:var(--primary);font-weight:bold;margin-bottom:5px;">${dateStr} 航行日志</div>` + 
+                        tasks.map(t => `<div style="font-size:0.85rem">· ${t}</div>`).join('');
+    } else {
+        log.innerHTML = `<div style="color:var(--text-sub)">${dateStr}</div><div style="font-size:0.85rem">该日期暂无航行记录。</div>`;
+    }
+};
+grid.appendChild(box);
+    }
+}
+
+    // 其他原有逻辑
     function checkLevelUp() {
         const nextLv = Math.floor(userData.totalEarned / 5000);
         if (nextLv > userData.level) {
@@ -505,7 +780,7 @@
             const ship = document.getElementById('shipVisual');
             ship.classList.add('ship-level-up');
             setTimeout(() => ship.classList.remove('ship-level-up'), 1000);
-            userData.logs.unshift(`🎉 晋升！你现在是 Lv.${userData.level} 的高级船长了！`);
+            userData.logs.push(`🎉 晋升！你现在是 Lv.${userData.level} 的船长了！`);
         }
     }
 
@@ -528,62 +803,140 @@
 
     function repairWithWood() {
         if (userData.wood > 0 && userData.hp < 100) {
+        // 播放第一声：拉
+        playSawingSound();
+        
+        // 0.45秒后播放第二声：推
+        setTimeout(() => {
             playSawingSound();
-            setTimeout(() => { playSawingSound(); }, 450);
+        }, 450);
 
-            userData.wood--;
-            userData.hp = Math.min(100, userData.hp + 10);
-            userData.logs.unshift("🔧 使用了木材修理船只，船体结构得到了部分恢复。");
-            saveData(); render();
-        } else { alert("木材材料不足！"); }
+        // 原有的修理逻辑
+        userData.wood--;
+        userData.hp = Math.min(100, userData.hp + 10);
+        userData.logs.unshift("使用了木材修理船只，船体变得更坚固了。");
+        
+        saveData();
+        render();
+        } else { alert("材料不足（3木板+500¥）"); }
     }
 
     async function repairWithMoney() {
-        if (userData.balance >= 500 && userData.hp < 100) {
-            try { await playPrecisionRepairSound(); } catch (e) { console.log(e); }
-            userData.balance -= 500;
-            userData.hp = Math.min(100, userData.hp + 30);
-            userData.logs.unshift("🔧 【紧急修理】完成！支付500¥，紧急重修了部分受损舱室。");
-            saveData(); render();
-        } else if (userData.hp >= 100) {
-            alert("船只非常坚固，不需要修理。");
-        } else {
-            alert("金币不足以支付维修费！");
+    // 检查金币是否足够 (假设是 500)
+    if (userData.balance >= 500 && userData.hp < 100) {
+        
+        // 核心修正：确保这里调用的名字是你最新定义的那个“磨砂金属音”
+        try {
+            await playPrecisionRepairSound(); 
+        } catch (e) {
+            console.log("音频播放失败，但不影响逻辑", e);
         }
+
+        // 逻辑处理
+        userData.balance -= 500;
+        userData.hp = Math.min(100, userData.hp + 30);
+        
+        userData.logs.unshift("🔧 【紧急修理】完成！使用了精密零件加固船体。");
+        if(userData.logs.length > 5) userData.logs.pop();
+
+        saveData();
+        render();
+    } else if (userData.hp >= 100) {
+        alert("船只非常坚固，不需要修理。");
+    } else {
+        alert("金币不足以支付维修费！");
     }
+}
 
     function saveAndReturn() {
-        const name = document.getElementById('habitName').value.trim();
+        const name = document.getElementById('habitName').value;
         const reward = document.getElementById('habitReward').value;
         if (name && reward) {
             userData.habits.push({ name, reward: parseInt(reward), count: 0 });
-            userData.logs.unshift(`【新航线】成功登记了新习惯「${name}」！`);
-            document.getElementById('habitName').value = '';
-            document.getElementById('habitReward').value = '';
-            saveData(); render(); navigate('homePage', document.querySelector('.bottom-nav .nav-item'));
-        } else { alert("请填写完整的名称和奖励金币！"); }
-    }
-
-    function saveData() { 
-        localStorage.setItem('lifeRpgOceanFinal_V6', JSON.stringify(userData)); 
-        if (typeof window.syncToCloud === 'function') {
-            window.syncToCloud();
+            saveData(); render(); navigate('homePage', document.querySelector('.nav-item'));
         }
     }
 
-    // 初始化生命周期
+    function saveData() { localStorage.setItem('lifeRpgOceanFinal_V6', JSON.stringify(userData)); 
+                        if (typeof window.syncToCloud === 'function') {
+        window.syncToCloud();
+    }}
+    
+    // 每日损耗模拟
     if(Math.random() > 0.7) { userData.hp = Math.max(5, userData.hp - 5); saveData(); }
+
     render();
+
+// 使用 var 或直接挂载到 window，防止重复定义导致的崩溃
+if (typeof window.displayDate === 'undefined') {
+    window.displayDate = new Date();
+}
+
+// 确保函数在全局作用域
+window.changeMonth = function(step) {
+    try {
+        // 使用 window.displayDate 确保引用的是全局那个
+        window.displayDate.setMonth(window.displayDate.getMonth() + step);
+        
+        // 执行渲染
+        if (typeof renderMatrix === 'function') {
+            renderMatrix();
+        } else {
+            console.error("找不到 renderMatrix 函数");
+        }
+        
+        // 播放一点点清脆的声音
+        if (typeof playTickSound === 'function') playTickSound(1000);
+        
+    } catch (e) {
+        console.error("切换月份出错:", e);
+    }
+};
+
+// 1. 初始化月份舵轮
+window.displayDate = window.displayDate || new Date();
+
+// 2. 专门为你这个 HTML 结构写的切换函数
+window.changeMonth = function(step) {
+    // 拨动月份
+    window.displayDate.setMonth(window.displayDate.getMonth() + step);
+    
+    // 执行渲染（对准你的 matrixGrid）
+    if (typeof renderMatrix === 'function') {
+        renderMatrix();
+    }
+    
+    // 【关键修复】对准你的 id="currentMonthLabel"
+    const label = document.getElementById('currentMonthLabel');
+    if (label) {
+        const y = window.displayDate.getFullYear();
+        const m = window.displayDate.getMonth() + 1;
+        label.innerText = `${y}年 ${m}月`;
+    }
+    
+    // 播放音效
+    if (typeof playTickSound === 'function') playTickSound(1000);
+};
+
+// 3. 修正你的渲染函数（确保它能找到 matrixGrid）
+// 请确保你代码里那个画格子的函数开头是这样写的：
+// function renderMatrix() {
+//    const grid = document.getElementById('matrixGrid'); // 必须叫这个名字
+//    ...
+// }
+
+
+  
 </script>
 
-<script>
+ <script>
     (function() {
         const url = 'https://yfhhzlupjbkmgvmtohwi.supabase.co';
         const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlmaGh6bHVwamJrbWd2bXRvaHdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NTk4OTcsImV4cCI6MjA5NDEzNTg5N30.6VN_Gau35D-_BvFp0-rIrz2UO79a-4sbxn-snaAvI3c';
         
         window.syncToCloud = async function() {
             if (typeof window.supabase === 'undefined') {
-                console.error("【失败】未在头部检测到 Supabase 核心脚本加载！");
+                console.error("【失败】没有引入 Supabase 工具包！");
                 return;
             }
             const _supabase = window.supabase.createClient(url, key);
@@ -595,9 +948,7 @@
                 .upsert({ username: "Captain", game_json: currentData }, { onConflict: 'username' });
 
             if (!error) {
-                console.log('【云端同步成功】数据已安全登陆 Supabase 港口！🚢✨');
-            } else {
-                console.error('【同步失败报错】:', error.message);
+                console.log('【云端同步成功】🚢✨');
             }
         };
     })();
