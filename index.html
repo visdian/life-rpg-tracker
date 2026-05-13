@@ -678,7 +678,7 @@ function playClickSound() {
         });
     }
 
-    function checkHabit(index) {
+     function checkHabit(index) {
       // --- 核心修改：播放声音 ---
     playClickSound(); 
     // ------------------------
@@ -686,11 +686,17 @@ function playClickSound() {
         userData.balance += parseInt(h.reward);
         userData.totalEarned += parseInt(h.reward);
         
-        // 记录到历史数据
-        const today = new Date().toISOString().split('T')[0];
-    userData.history[today] = (userData.history[today] || 0) + parseInt(h.reward);
+        // 【加固修复】记录到历史数据，并自动清理历史残留的数字格式
+const today = new Date().toISOString().split('T')[0];
 
-        let msg = `完成了 ${h.name}，感觉到自己更好了。`;
+// 如果今天没有记录，或者之前的记录不是一个数组（比如是个旧数字），强制把它重置为干净的空数组
+if (!userData.history[today] || !Array.isArray(userData.history[today])) {
+    userData.history[today] = [];
+}
+
+userData.history[today].push(h.name);
+
+        let msg = `完成了 ${h.name}，感觉到更自律了。`;
         if (Math.random() < 0.4) {
             userData.wood += 1;
             msg += " 顺便在海面上捡到了碎木板！";
@@ -729,12 +735,17 @@ function playClickSound() {
     // 2. 生成每一天的格子
     for(let d=1; d<=daysInMonth; d++) {
         const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-        const tasks = userData.history ? (userData.history[dateStr] || []) : [];
-        
-        // 在循环生成格子的时候
+
+// 【加固处理】如果发现旧数据不是数组（比如是个金币数字），自动把它转成标准数组，防止代码卡死
+let rawTasks = userData.history ? (userData.history[dateStr] || []) : [];
+if (!Array.isArray(rawTasks)) {
+    rawTasks = typeof rawTasks === 'number' || typeof rawTasks === 'string' ? [`赚取了资源: ${rawTasks}`] : [];
+}
+const tasks = rawTasks; 
+
 let levelClass = '';
 if(tasks.length > 0) {
-    levelClass = 'has-data '; // 注意这里有个空格
+    levelClass = 'has-data '; 
     if(tasks.length >= 1 && tasks.length < 3) levelClass += 'level-1';
     else if(tasks.length >= 3 && tasks.length < 5) levelClass += 'level-2';
     else if(tasks.length >= 5 && tasks.length < 7) levelClass += 'level-3';
