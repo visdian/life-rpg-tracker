@@ -595,7 +595,7 @@ function playClickSound() {
         document.getElementById(p).classList.add('active');
         if(el) el.classList.add('active');
         
-        
+        // --- 核心修复点 2：这里依然调用 renderMatrix，但我们下面会定义它 ---
         if(p === 'calendarPage') renderMatrix(); 
         
         window.scrollTo(0,0);
@@ -662,13 +662,15 @@ function playClickSound() {
         document.getElementById('latestLog').innerText = userData.logs[userData.logs.length - 1] || "暂无日志";
         document.getElementById('shipVisual').innerText = userData.hp < 30 ? "🏚️" : "🛶";
 
-        const list = document.getElementById('habitList');
+       const list = document.getElementById('habitList');
         list.innerHTML = '';
         userData.habits.forEach((h, index) => {
             const item = document.createElement('div');
             item.className = 'quest-item';
+            
+            // 【优雅改动】这里完全恢复你原本纯净、好看的排版！没有任何刺眼的按钮
             item.innerHTML = `
-                <div style="flex:1">
+                <div style="flex:1; cursor: pointer;" title="双击可修改或删除此习惯" ondblclick="triggerHabitMenu(${index})">
                     <strong style="font-size:1.1rem; display:block;">${h.name}</strong>
                     <div style="font-size:0.75rem; color:var(--secondary); margin-top:4px;">收益: ¥${h.reward}</div>
                 </div>
@@ -678,7 +680,7 @@ function playClickSound() {
         });
     }
 
-     function checkHabit(index) {
+    function checkHabit(index) {
       // --- 核心修改：播放声音 ---
     playClickSound(); 
     // ------------------------
@@ -868,10 +870,7 @@ grid.appendChild(box);
         }
     }
 
-    function saveData() { localStorage.setItem('lifeRpgOceanFinal_V6', JSON.stringify(userData)); 
-                        if (typeof window.syncToCloud === 'function') {
-        window.syncToCloud();
-    }}
+    function saveData() { localStorage.setItem('lifeRpgOceanFinal_V6', JSON.stringify(userData)); }
     
     // 每日损耗模拟
     if(Math.random() > 0.7) { userData.hp = Math.max(5, userData.hp - 5); saveData(); }
@@ -937,41 +936,95 @@ window.changeMonth = function(step) {
 // }
 
 
+  // 【隐形菜单】双击触发修改或删除选择
+    function triggerHabitMenu(index) {
+        playClickSound();
+        const h = userData.habits[index];
+        
+        // 弹出一个指挥官选择框
+        const choice = prompt(
+            `【航线管理】您正在配置习惯：「${h.name}」\n\n` +
+            `请输入对应的数字进行操作：\n` +
+            `1. 修改习惯内容（名称或奖励）\n` +
+            `2. 彻底废弃（删除）此习惯\n` +
+            `输入其他任何内容或点取消将退出。`
+        );
+
+        if (choice === "1") {
+            // 执行修改逻辑
+            const newName = prompt("请输入新的习惯名称：", h.name);
+            if (newName === null) return;
+            const trimmedName = newName.trim();
+            if (!trimmedName) return alert("名称不能为空！");
+
+            const newReward = prompt("请输入新的金币奖励：", h.reward);
+            if (newReward === null) return;
+            const parsedReward = parseInt(newReward);
+            if (isNaN(parsedReward) || parsedReward < 0) return alert("请输入合理的金币数字！");
+
+            const oldName = h.name;
+            h.name = trimmedName;
+            h.reward = parsedReward;
+            userData.logs.unshift(`【航线调整】「${oldName}」已改为「${trimmedName}」。`);
+            if(userData.logs.length > 5) userData.logs.pop();
+            
+            saveData(); render();
+        } 
+        else if (choice === "2") {
+            // 执行删除逻辑
+            if (confirm(`船长，确定要彻底删除「${h.name}」吗？`)) {
+                userData.habits.splice(index, 1);
+                userData.logs.unshift(`【航线废弃】删除了习惯「${h.name}」。`);
+                if(userData.logs.length > 5) userData.logs.pop();
+                
+                saveData(); render();
+            }
+        }
+    }
+
   
 </script>
 
  <script>
+    // 独立的联网引擎，直接跟浏览器最高层拉手
     (function() {
         const url = 'https://yfhhzlupjbkmgvmtohwi.supabase.co';
         const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlmaGh6bHVwamJrbWd2bXRvaHdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NTk4OTcsImV4cCI6MjA5NDEzNTg5N30.6VN_Gau35D-_BvFp0-rIrz2UO79a-4sbxn-snaAvI3c';
         
-        window.syncToCloud = async function() {
+        // 强行挂载到全局窗口，谁也卡不住它
+        window.goCloud = async function() {
             if (typeof window.supabase === 'undefined') {
-                console.error("【失败】没有引入 Supabase 工具包！");
+                console.error("【失败】找不到 Supabase 工具包，请确认你把 <script src='...'> 加到最顶上的 head 标签里了！");
                 return;
             }
+            
             const _supabase = window.supabase.createClient(url, key);
+            
+            // 现场直接去抓你的数据缓存
             let currentData = JSON.parse(localStorage.getItem('lifeRpgOceanFinal_V6'));
-            if (!currentData) return;
+            if (!currentData) {
+                console.error("【失败】本地没有找到 lifeRpgOceanFinal_V6 的数据缓存！");
+                return;
+            }
 
-            // 【精准修复】这里加上 id: 1，并且把冲突判定改为 'id'
-            // 这样无论如何，只要你在同个手机/电脑上打卡，都会稳定覆盖数据库里 id 为 1 的那一行数据
+            console.log("正在扬帆... 尝试连接云端港口...");
+            
             const { data, error } = await _supabase
                 .from('user_data')
-                .upsert(
-                    { id: 1, username: "Captain", game_json: currentData }, 
-                    { onConflict: 'id' }
-                );
+                .upsert({ 
+                    username: "Captain", 
+                    game_json: currentData 
+                }, { onConflict: 'username' });
 
-            if (!error) {
-                console.log('【云端同步成功】🚢✨');
+            if (error) {
+                console.error('【失败】云端拒绝登岸:', error.message);
             } else {
-                // 如果还是失败，这行代码会在控制台打印出具体原因，方便我们排查
-                console.error('【云端同步失败】原因：', error.message);
+                console.log('【超级成功】数据已安全抵达云端港口！🚢✨');
             }
         };
     })();
 </script>
+
   
 </body>
 </html>
